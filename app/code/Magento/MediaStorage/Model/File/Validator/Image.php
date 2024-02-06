@@ -67,7 +67,6 @@ class Image extends AbstractValidator
      */
     public function isValid($filePath): bool
     {
-        if (($fileSize = $this->file->stat($filePath)['size']) <= 0) return false; 
         $fileMimeType = $this->fileMime->getMimeType($filePath);
         $isValid = true;
 

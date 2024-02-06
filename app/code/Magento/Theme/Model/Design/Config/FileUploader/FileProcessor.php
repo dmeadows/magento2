@@ -6,16 +6,20 @@
 
 namespace Magento\Theme\Model\Design\Config\FileUploader;
 
+use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\App\ObjectManager;
+use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Filesystem;
+use Magento\Framework\Filesystem\Directory\WriteInterface;
+use Magento\Framework\Image\AdapterFactory;
+use Magento\Framework\UrlInterface;
 use Magento\MediaStorage\Model\File\UploaderFactory;
+use Magento\Store\Model\StoreManagerInterface;
 use Magento\Theme\Model\Design\Backend\File;
+use Magento\Theme\Model\Design\Backend\Image;
 use Magento\Theme\Model\Design\BackendModelFactory;
 use Magento\Theme\Model\Design\Config\MetadataProvider;
-use Magento\Framework\App\Filesystem\DirectoryList;
-use Magento\Framework\Filesystem\Directory\WriteInterface;
-use Magento\Framework\UrlInterface;
-use Magento\Store\Model\StoreManagerInterface;
 
 /**
  * Design file processor.
@@ -57,24 +61,34 @@ class FileProcessor
     public const FILE_DIR = 'design/file';
 
     /**
+     * @var AdapterFactory|mixed
+     */
+    private mixed $adapterFactory;
+
+    /**
      * @param UploaderFactory $uploaderFactory
      * @param BackendModelFactory $backendModelFactory
      * @param MetadataProvider $metadataProvider
      * @param Filesystem $filesystem
      * @param StoreManagerInterface $storeManager
+     * @param AdapterFactory|null $adapterFactory
+     * @throws FileSystemException
      */
     public function __construct(
         UploaderFactory $uploaderFactory,
         BackendModelFactory $backendModelFactory,
         MetadataProvider $metadataProvider,
         Filesystem $filesystem,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        AdapterFactory $adapterFactory = null
     ) {
         $this->uploaderFactory = $uploaderFactory;
         $this->backendModelFactory = $backendModelFactory;
         $this->metadataProvider = $metadataProvider;
         $this->storeManager = $storeManager;
         $this->mediaDirectory = $filesystem->getDirectoryWrite(DirectoryList::MEDIA);
+        $this->adapterFactory = $adapterFactory ?: ObjectManager::getInstance()
+            ->get(AdapterFactory::class);
     }
 
     /**
@@ -145,6 +159,10 @@ class FileProcessor
         $uploader->setFilesDispersion(false);
         $uploader->setAllowedExtensions($backendModel->getAllowedExtensions());
         $uploader->addValidateCallback('size', $backendModel, 'validateMaxSize');
+        if ($backendModel instanceof Image) {
+            $imageAdapter = $this->adapterFactory->create();
+            $uploader->addValidateCallback('catalog_product_image', $imageAdapter, 'validateUploadFile');
+        }
 
         $result = $uploader->save($destination);
         unset($result['path']);
