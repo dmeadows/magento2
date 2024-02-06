@@ -1,63 +1,36 @@
 <?php
-/**
- * Copyright © Magento, Inc. All rights reserved.
- * See COPYING.txt for license details.
- */
-declare(strict_types=1);
 
-namespace Magento\MediaStorage\Model\File\Validator;
+// ...
 
-use Laminas\Validator\AbstractValidator;
-use Magento\Framework\File\Mime;
-use Magento\Framework\Filesystem\Driver\File;
-use Magento\Framework\Image\Factory;
+use Magento\Framework\Filesystem\Io\File as IoFile;
 
-/**
- * Image validator
- */
+// ...
+
 class Image extends AbstractValidator
 {
-    /**
-     * @var array
-     */
-    private $imageMimeTypes = [
-        'png'  => 'image/png',
-        'jpe'  => 'image/jpeg',
-        'jpeg' => 'image/jpeg',
-        'jpg'  => 'image/jpeg',
-        'gif'  => 'image/gif',
-        'bmp'  => 'image/bmp',
-        'ico'  => ['image/vnd.microsoft.icon', 'image/x-icon']
-    ];
+    // ...
 
     /**
-     * @var Mime
+     * @var IoFile
      */
-    private $fileMime;
-
-    /**
-     * @var Factory
-     */
-    private $imageFactory;
-
-    /**
-     * @var File
-     */
-    private $file;
+    private $ioFile;
 
     /**
      * @param Mime $fileMime
      * @param Factory $imageFactory
      * @param File $file
+     * @param IoFile $ioFile
      */
     public function __construct(
         Mime $fileMime,
         Factory $imageFactory,
-        File $file
+        File $file,
+        IoFile $ioFile
     ) {
         $this->fileMime = $fileMime;
         $this->imageFactory = $imageFactory;
         $this->file = $file;
+        $this->ioFile = $ioFile;
 
         parent::__construct();
     }
@@ -75,6 +48,15 @@ class Image extends AbstractValidator
                 $image = $this->imageFactory->create($filePath);
                 $image->open();
             } catch (\Exception $e) {
+                $isValid = false;
+            }
+        } else {
+            $isValid = false;
+        }
+        
+        if ($isValid) {
+            $fileSize = $this->ioFile->getSize($filePath);
+            if ($fileSize <= 0) {
                 $isValid = false;
             }
         }
