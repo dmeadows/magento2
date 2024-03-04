@@ -250,7 +250,6 @@ class ProductDataMapper implements BatchDataMapperInterface
      * - "Visible in Advanced Search" (is_visible_in_advanced_search)
      * - "Use in Layered Navigation" (is_filterable)
      * - "Use in Search Results Layered Navigation" (is_filterable_in_search)
-     * - "Use in Sorting in Product Listing" (used_for_sort_by)
      *
      * @param Attribute $attribute
      * @return bool
@@ -262,7 +261,6 @@ class ProductDataMapper implements BatchDataMapperInterface
             || $attribute->getIsVisibleInAdvancedSearch()
             || $attribute->getIsFilterable()
             || $attribute->getIsFilterableInSearch()
-            || $attribute->getUsedForSortBy()
         );
     }
 
@@ -313,7 +311,11 @@ class ProductDataMapper implements BatchDataMapperInterface
             && in_array($attribute->getAttributeCode(), $this->sortableAttributesValuesToImplode)
             && count($attributeValues) > 1
         ) {
-            $attributeValues = [$productId => implode(' ', $attributeValues)];
+            $concatenatedValues = implode(' ', $attributeValues);
+            if (strlen($concatenatedValues) > 32766) {
+                throw new \Exception('Attribute values length exceeds the limit of 32766 characters.');
+            }
+            $attributeValues = [$productId => substr($concatenatedValues, 0, 32766)];
         }
 
         if (in_array($attribute->getAttributeCode(), $this->sortableCaseSensitiveAttributes)) {
