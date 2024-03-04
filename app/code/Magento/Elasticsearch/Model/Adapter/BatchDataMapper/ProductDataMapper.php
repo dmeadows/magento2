@@ -261,6 +261,7 @@ class ProductDataMapper implements BatchDataMapperInterface
             || $attribute->getIsVisibleInAdvancedSearch()
             || $attribute->getIsFilterable()
             || $attribute->getIsFilterableInSearch()
+            || $attribute->getUsedForSortBy()
         );
     }
 
